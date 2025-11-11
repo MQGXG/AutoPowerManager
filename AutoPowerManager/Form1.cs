@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Collections.Generic;
 using System.Security.Principal;
 using System.IO;
+using System.Linq;
 using Microsoft.Win32;
 using Microsoft.Win32.TaskScheduler;
 
@@ -28,6 +29,7 @@ namespace AutoPowerManager
         private CheckBox chkBootRepeat;
         private Button btnSetBoot;
         private Button btnRemoveBoot;
+        private Button btnBootInfo;
 
         private GroupBox grpShutdown;
         private Label lblShutdownTime;
@@ -184,9 +186,9 @@ namespace AutoPowerManager
         private void InitializeBootGroup()
         {
             grpBoot = new GroupBox();
-            grpBoot.Text = "单次定时开机";
+            grpBoot.Text = "定时唤醒";
             grpBoot.Location = new Point(20, 20);
-            grpBoot.Size = new Size(600, 180);
+            grpBoot.Size = new Size(600, 200);
             grpBoot.TabIndex = 0;
             grpBoot.Font = new Font("微软雅黑", 10, FontStyle.Bold);
             grpBoot.ForeColor = textColor;
@@ -196,7 +198,7 @@ namespace AutoPowerManager
 
             // 开机日期标签
             lblBootTime = new Label();
-            lblBootTime.Text = "开机时间:";
+            lblBootTime.Text = "唤醒时间:";
             lblBootTime.Location = new Point(25, 35);
             lblBootTime.Size = new Size(80, 25);
             lblBootTime.TabIndex = 0;
@@ -228,8 +230,8 @@ namespace AutoPowerManager
 
             // 启用开机复选框
             chkBootEnabled = new CheckBox();
-            chkBootEnabled.Text = "启用定时开机";
-            chkBootEnabled.Location = new Point(25, 80);
+            chkBootEnabled.Text = "启用定时唤醒";
+            chkBootEnabled.Location = new Point(25, 75);
             chkBootEnabled.Size = new Size(120, 25);
             chkBootEnabled.TabIndex = 3;
             chkBootEnabled.Checked = true;
@@ -240,7 +242,7 @@ namespace AutoPowerManager
             // 重复开机复选框
             chkBootRepeat = new CheckBox();
             chkBootRepeat.Text = "每天重复";
-            chkBootRepeat.Location = new Point(160, 80);
+            chkBootRepeat.Location = new Point(160, 75);
             chkBootRepeat.Size = new Size(100, 25);
             chkBootRepeat.TabIndex = 4;
             chkBootRepeat.Checked = false;
@@ -249,24 +251,30 @@ namespace AutoPowerManager
             grpBoot.Controls.Add(chkBootRepeat);
 
             // 设置开机任务按钮
-            btnSetBoot = CreateStyledButton("设置开机任务", 25, 120, 130, 40);
+            btnSetBoot = CreateStyledButton("设置唤醒任务", 25, 115, 120, 35);
             btnSetBoot.TabIndex = 5;
             btnSetBoot.Click += SetBootTask_Click;
             grpBoot.Controls.Add(btnSetBoot);
 
             // 删除开机任务按钮
-            btnRemoveBoot = CreateStyledButton("删除开机任务", 170, 120, 130, 40, false);
+            btnRemoveBoot = CreateStyledButton("删除唤醒任务", 160, 115, 120, 35, false);
             btnRemoveBoot.TabIndex = 6;
             btnRemoveBoot.Click += RemoveBootTask_Click;
             grpBoot.Controls.Add(btnRemoveBoot);
 
+            // 功能说明按钮
+            btnBootInfo = CreateStyledButton("功能说明", 300, 115, 80, 35, false, warningColor);
+            btnBootInfo.Font = new Font("微软雅黑", 8);
+            btnBootInfo.Click += ShowBootFunctionInfo;
+            grpBoot.Controls.Add(btnBootInfo);
+
             // 开机说明标签
             Label lblBootInfo = new Label();
-            lblBootInfo.Text = "注意：定时开机需要主板支持ACPI电源管理，且仅在接通电源时有效";
-            lblBootInfo.Location = new Point(320, 80);
-            lblBootInfo.Size = new Size(250, 40);
-            lblBootInfo.ForeColor = mutedTextColor;
-            lblBootInfo.Font = new Font("微软雅黑", 8);
+            lblBootInfo.Text = "⚠️ 注意：此功能只能从睡眠/休眠状态唤醒计算机\n真正的定时开机需要在BIOS中设置RTC Alarm";
+            lblBootInfo.Location = new Point(25, 160);
+            lblBootInfo.Size = new Size(550, 30);
+            lblBootInfo.ForeColor = accentColor;
+            lblBootInfo.Font = new Font("微软雅黑", 8, FontStyle.Bold);
             lblBootInfo.TextAlign = ContentAlignment.MiddleLeft;
             grpBoot.Controls.Add(lblBootInfo);
         }
@@ -275,7 +283,7 @@ namespace AutoPowerManager
         {
             grpShutdown = new GroupBox();
             grpShutdown.Text = "单次定时关机";
-            grpShutdown.Location = new Point(20, 220);
+            grpShutdown.Location = new Point(20, 240);
             grpShutdown.Size = new Size(600, 180);
             grpShutdown.TabIndex = 1;
             grpShutdown.Font = new Font("微软雅黑", 10, FontStyle.Bold);
@@ -319,7 +327,7 @@ namespace AutoPowerManager
             // 启机关机复选框
             chkShutdownEnabled = new CheckBox();
             chkShutdownEnabled.Text = "启用定时关机";
-            chkShutdownEnabled.Location = new Point(25, 80);
+            chkShutdownEnabled.Location = new Point(25, 75);
             chkShutdownEnabled.Size = new Size(120, 25);
             chkShutdownEnabled.TabIndex = 10;
             chkShutdownEnabled.Checked = true;
@@ -328,13 +336,13 @@ namespace AutoPowerManager
             grpShutdown.Controls.Add(chkShutdownEnabled);
 
             // 设置关机任务按钮
-            btnSetShutdown = CreateStyledButton("设置关机任务", 25, 120, 130, 40);
+            btnSetShutdown = CreateStyledButton("设置关机任务", 25, 115, 130, 40);
             btnSetShutdown.TabIndex = 11;
             btnSetShutdown.Click += SetShutdownTask_Click;
             grpShutdown.Controls.Add(btnSetShutdown);
 
             // 取消关机任务按钮
-            btnCancelShutdown = CreateStyledButton("取消关机任务", 170, 120, 130, 40, false);
+            btnCancelShutdown = CreateStyledButton("取消关机任务", 170, 115, 130, 40, false);
             btnCancelShutdown.TabIndex = 12;
             btnCancelShutdown.Click += CancelShutdownTask_Click;
             grpShutdown.Controls.Add(btnCancelShutdown);
@@ -342,7 +350,7 @@ namespace AutoPowerManager
             // 关机说明标签
             Label lblShutdownInfo = new Label();
             lblShutdownInfo.Text = "设置单次关机时间，关机前请保存所有工作。关机前1分钟会有提醒";
-            lblShutdownInfo.Location = new Point(320, 80);
+            lblShutdownInfo.Location = new Point(320, 75);
             lblShutdownInfo.Size = new Size(250, 40);
             lblShutdownInfo.ForeColor = mutedTextColor;
             lblShutdownInfo.Font = new Font("微软雅黑", 8);
@@ -487,7 +495,7 @@ namespace AutoPowerManager
 
             // 阶段开机时间标签
             lblStageBootTime = new Label();
-            lblStageBootTime.Text = "开机时间:";
+            lblStageBootTime.Text = "唤醒时间:";
             lblStageBootTime.Location = new Point(0, 10);
             lblStageBootTime.Size = new Size(80, 25);
             lblStageBootTime.Font = new Font("微软雅黑", 9);
@@ -554,7 +562,7 @@ namespace AutoPowerManager
 
             // 阶段任务说明
             Label lblStageInfo = new Label();
-            lblStageInfo.Text = "设置每周固定时间的开关机任务，适合工作日定时开关机";
+            lblStageInfo.Text = "设置每周固定时间的开关机任务，适合工作日定时开关机\n注意：唤醒功能只能从睡眠/休眠状态恢复";
             lblStageInfo.Location = new Point(25, 240);
             lblStageInfo.Size = new Size(550, 40);
             lblStageInfo.ForeColor = mutedTextColor;
@@ -709,12 +717,13 @@ namespace AutoPowerManager
             chkBootRepeat.TabIndex = 3;
             btnSetBoot.TabIndex = 4;
             btnRemoveBoot.TabIndex = 5;
+            btnBootInfo.TabIndex = 6;
 
-            dtpShutdownDate.TabIndex = 6;
-            dtpShutdownTime.TabIndex = 7;
-            chkShutdownEnabled.TabIndex = 8;
-            btnSetShutdown.TabIndex = 9;
-            btnCancelShutdown.TabIndex = 10;
+            dtpShutdownDate.TabIndex = 7;
+            dtpShutdownTime.TabIndex = 8;
+            chkShutdownEnabled.TabIndex = 9;
+            btnSetShutdown.TabIndex = 10;
+            btnCancelShutdown.TabIndex = 11;
 
             btnShutdownNow.TabIndex = 0;
             btnRestartNow.TabIndex = 1;
@@ -841,6 +850,11 @@ namespace AutoPowerManager
             ShowNotification("设置已保存成功！");
         }
 
+        private void ShowBootFunctionInfo(object sender, EventArgs e)
+        {
+            ShowBootFunctionInfo();
+        }
+
         // 功能实现方法
         private void SetBootTask(DateTime bootTime, bool enabled, bool repeat)
         {
@@ -848,8 +862,21 @@ namespace AutoPowerManager
             {
                 if (bootTime <= DateTime.Now && !repeat)
                 {
-                    MessageBox.Show("开机时间必须是未来的时间", "错误",
+                    MessageBox.Show("唤醒时间必须是未来的时间", "错误",
                                   MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 显示功能说明确认
+                if (MessageBox.Show("⚠️ 软件唤醒功能说明：\n\n" +
+                                  "• 此功能只能从睡眠/休眠状态唤醒计算机\n" +
+                                  "• 无法实现真正的冷启动开机\n" +
+                                  "• 需要计算机处于睡眠或休眠状态\n\n" +
+                                  "是否继续设置唤醒任务？",
+                                  "唤醒功能说明",
+                                  MessageBoxButtons.YesNo,
+                                  MessageBoxIcon.Warning) == DialogResult.No)
+                {
                     return;
                 }
 
@@ -867,9 +894,9 @@ namespace AutoPowerManager
 
                     if (enabled)
                     {
-                        // 创建开机任务
+                        // 创建唤醒任务
                         TaskDefinition bootTask = taskService.NewTask();
-                        bootTask.RegistrationInfo.Description = "自动开机任务 - 自动开关机管理器";
+                        bootTask.RegistrationInfo.Description = "自动唤醒任务 - 自动开关机管理器";
                         bootTask.Principal.RunLevel = TaskRunLevel.Highest;
 
                         if (repeat)
@@ -891,8 +918,8 @@ namespace AutoPowerManager
                             });
                         }
 
-                        // 设置操作 - 使用rundll32调用电源管理功能
-                        bootTask.Actions.Add(new ExecAction("rundll32.exe", "powrprof.dll,SetSuspendState 0", null));
+                        // 设置操作 - 唤醒计算机
+                        bootTask.Actions.Add(new ExecAction("cmd.exe", "/c echo Wake up task", null));
                         bootTask.Settings.WakeToRun = true;
                         bootTask.Settings.DisallowStartIfOnBatteries = false;
                         bootTask.Settings.StopIfGoingOnBatteries = false;
@@ -901,7 +928,7 @@ namespace AutoPowerManager
                         taskService.RootFolder.RegisterTaskDefinition(TASK_BOOT, bootTask);
 
                         string repeatText = repeat ? "每天" : "一次";
-                        string message = $"定时开机已设置为 {bootTime:yyyy-MM-dd HH:mm} ({repeatText})";
+                        string message = $"定时唤醒已设置为 {bootTime:yyyy-MM-dd HH:mm} ({repeatText})\n\n注意：计算机需要处于睡眠或休眠状态";
                         ShowNotification(message);
 
                         // 刷新任务列表
@@ -909,7 +936,7 @@ namespace AutoPowerManager
                     }
                     else
                     {
-                        ShowNotification("开机任务已禁用");
+                        ShowNotification("唤醒任务已禁用");
                     }
                 }
             }
@@ -919,8 +946,8 @@ namespace AutoPowerManager
             }
             catch (Exception ex)
             {
-                LogError($"设置开机任务失败: {ex.Message}");
-                MessageBox.Show($"设置开机任务失败: {ex.Message}", "错误",
+                LogError($"设置唤醒任务失败: {ex.Message}");
+                MessageBox.Show($"设置唤醒任务失败: {ex.Message}", "错误",
                               MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -932,7 +959,7 @@ namespace AutoPowerManager
                 using (TaskService taskService = new TaskService())
                 {
                     taskService.RootFolder.DeleteTask(TASK_BOOT, false);
-                    ShowNotification("开机任务已删除");
+                    ShowNotification("唤醒任务已删除");
 
                     // 刷新任务列表
                     LoadStageTasks();
@@ -944,8 +971,8 @@ namespace AutoPowerManager
             }
             catch (Exception ex)
             {
-                LogError($"删除开机任务失败: {ex.Message}");
-                MessageBox.Show($"删除开机任务失败: {ex.Message}", "错误",
+                LogError($"删除唤醒任务失败: {ex.Message}");
+                MessageBox.Show($"删除唤醒任务失败: {ex.Message}", "错误",
                               MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -1093,7 +1120,7 @@ namespace AutoPowerManager
                 // 检查时间是否合理
                 if (dtpStageBootTime.Value.TimeOfDay >= dtpStageShutdownTime.Value.TimeOfDay)
                 {
-                    MessageBox.Show("关机时间必须晚于开机时间", "错误",
+                    MessageBox.Show("关机时间必须晚于唤醒时间", "错误",
                                   MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -1113,9 +1140,22 @@ namespace AutoPowerManager
 
                     if (chkStageEnabled.Checked)
                     {
-                        // 创建阶段开机任务
+                        // 显示唤醒功能说明
+                        if (MessageBox.Show("⚠️ 阶段唤醒功能说明：\n\n" +
+                                          "• 唤醒功能只能从睡眠/休眠状态恢复计算机\n" +
+                                          "• 无法实现真正的冷启动开机\n" +
+                                          "• 需要计算机处于睡眠或休眠状态\n\n" +
+                                          "是否继续设置阶段任务？",
+                                          "阶段任务说明",
+                                          MessageBoxButtons.YesNo,
+                                          MessageBoxIcon.Warning) == DialogResult.No)
+                        {
+                            return;
+                        }
+
+                        // 创建阶段唤醒任务
                         TaskDefinition stageBootTask = taskService.NewTask();
-                        stageBootTask.RegistrationInfo.Description = "阶段开机任务 - 自动开关机管理器";
+                        stageBootTask.RegistrationInfo.Description = "阶段唤醒任务 - 自动开关机管理器";
                         stageBootTask.Principal.RunLevel = TaskRunLevel.Highest;
 
                         // 为每个选中的星期创建触发器
@@ -1130,7 +1170,7 @@ namespace AutoPowerManager
                         }
 
                         // 设置操作
-                        stageBootTask.Actions.Add(new ExecAction("rundll32.exe", "powrprof.dll,SetSuspendState 0", null));
+                        stageBootTask.Actions.Add(new ExecAction("cmd.exe", "/c echo Stage wake task", null));
                         stageBootTask.Settings.WakeToRun = true;
                         stageBootTask.Settings.DisallowStartIfOnBatteries = false;
                         stageBootTask.Settings.StopIfGoingOnBatteries = false;
@@ -1162,7 +1202,7 @@ namespace AutoPowerManager
                         // 获取选择的星期文本
                         string daysText = GetSelectedDaysText();
 
-                        string message = $"阶段任务已设置:\n开机: {dtpStageBootTime.Value:HH:mm}\n关机: {dtpStageShutdownTime.Value:HH:mm}\n执行: {daysText}";
+                        string message = $"阶段任务已设置:\n唤醒: {dtpStageBootTime.Value:HH:mm}\n关机: {dtpStageShutdownTime.Value:HH:mm}\n执行: {daysText}";
                         ShowNotification(message);
 
                         // 刷新任务列表
@@ -1220,11 +1260,11 @@ namespace AutoPowerManager
             {
                 using (TaskService taskService = new TaskService())
                 {
-                    // 检查阶段开机任务
+                    // 检查阶段唤醒任务
                     Task stageBootTask = taskService.FindTask(TASK_STAGE_BOOT);
                     if (stageBootTask != null)
                     {
-                        ListViewItem item = new ListViewItem("阶段开机");
+                        ListViewItem item = new ListViewItem("阶段唤醒");
                         item.SubItems.Add(dtpStageBootTime.Value.ToString("HH:mm"));
                         item.SubItems.Add(GetSelectedDaysText());
                         item.SubItems.Add(stageBootTask.Enabled ? "已启用" : "已禁用");
@@ -1242,13 +1282,13 @@ namespace AutoPowerManager
                         listStageTasks.Items.Add(item);
                     }
 
-                    // 检查单次开机任务
+                    // 检查单次唤醒任务
                     Task bootTask = taskService.FindTask(TASK_BOOT);
                     if (bootTask != null && bootTask.Enabled)
                     {
                         foreach (Trigger trigger in bootTask.Definition.Triggers)
                         {
-                            ListViewItem item = new ListViewItem("单次开机");
+                            ListViewItem item = new ListViewItem("单次唤醒");
                             item.SubItems.Add(trigger.StartBoundary.ToString("yyyy-MM-dd HH:mm"));
                             item.SubItems.Add(trigger is DailyTrigger ? "每天" : "一次");
                             item.SubItems.Add("已启用");
@@ -1439,6 +1479,35 @@ namespace AutoPowerManager
             }
         }
 
+        private void ShowBootFunctionInfo()
+        {
+            string info = @"🔴 软件唤醒功能限制：
+
+• 只能从睡眠/休眠状态唤醒计算机
+• 无法实现真正的冷启动开机
+• 需要计算机处于睡眠或休眠状态
+
+🟢 真正的定时开机解决方案：
+
+1. BIOS/UEFI 设置（推荐）：
+   - 重启计算机，按 F2/DEL 进入 BIOS
+   - 找到 'Power Management' 或 'ACPI'
+   - 启用 'RTC Wake' 或 'Resume by Alarm'
+   - 设置具体唤醒时间
+
+2. 智能插座方案：
+   - 使用智能插座定时通电
+   - BIOS 中设置 'AC Power Recovery' 为开启
+   - 配合本软件的关机功能
+
+3. 网络唤醒 (Wake-on-LAN)：
+   - 启用网卡的 WOL 功能
+   - 配置路由器或使用手机App";
+
+            MessageBox.Show(info, "定时开机功能说明",
+                          MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
         private void LogError(string message)
         {
             try
@@ -1464,7 +1533,7 @@ namespace AutoPowerManager
 
         private void ShowAdminWarning()
         {
-            MessageBox.Show("检测到当前未以管理员权限运行。\n\n部分功能（如定时开机）需要管理员权限才能正常工作。\n\n建议右键点击程序，选择\"以管理员身份运行\"。",
+            MessageBox.Show("检测到当前未以管理员权限运行。\n\n部分功能（如定时唤醒）需要管理员权限才能正常工作。\n\n建议右键点击程序，选择\"以管理员身份运行\"。",
                           "权限提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
